@@ -16,13 +16,13 @@
     ollama run llama2:7b
     ```
 
-4. Publish the hr_agent prompt
+4. Publish the hr_agent prompts to langfuse prompt registry
 
     ```shell
     uv run main.py prompts --publish hr_agent
     ```
 
-6. In order for evals to run, you need to publish the ci eval dataset
+6. Before you can runs evals, you need to publish the eval dataset to langfuse dataset registry
 
     ```shell
     uv run main.py datasets --publish ci
