@@ -10,7 +10,7 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables import RunnableConfig
 from langchain.messages import HumanMessage, SystemMessage
-from prompt_ops import publish_prompt
+from llm_ops import publish_prompt, publish_dataset
 
 
 @dataclass
@@ -67,6 +67,11 @@ if __name__ == "__main__":
     prompts_subparser = subparsers.add_parser("prompts", help="Prompt registry actions")
     prompts_subparser.add_argument("-p", "--publish", help="Publish prompt to registry")
 
+    prompts_subparser = subparsers.add_parser("datasets", help="Dataset Actions")
+    prompts_subparser.add_argument(
+        "-p", "--publish", help="Publish dataset to registry"
+    )
+
     chat_subparser = subparsers.add_parser("chat", help="Chat with agent")
 
     args = parser.parse_args()
@@ -76,6 +81,9 @@ if __name__ == "__main__":
     elif args.command == "prompts":
         if args.publish:
             publish_prompt(langfuse, args.publish)
+    elif args.command == "datasets":
+        if args.publish:
+            publish_dataset(langfuse, args.publish)
     else:
         parser.print_help()
         sys.exit(1)

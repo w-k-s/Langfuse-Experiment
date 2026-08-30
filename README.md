@@ -22,6 +22,12 @@
     uv run main.py prompts --publish hr_agent
     ```
 
+6. In order for evals to run, you need to publish the ci eval dataset
+
+    ```shell
+    uv run main.py datasets --publish ci
+    ```
+
 5. Chat with the agent
 
     ```
@@ -36,7 +42,7 @@
 - [x] Prompt gemma, falcon from langchain
 - [x] Setup chat memory
 - [x] Get the system prompt from SaaS langfuse
-- [ ] Setup Evals in the CI/CD pipeline -OR- Experimentation on Langfuse
+- [ ] Setup Evals to run on the CI/CD pipeline 
 - [ ] Generate a generic hr handbook and set up rag over the handbook. 
 - [ ] Set up evals on language to monitor kpis
     1. Agent groundedness
