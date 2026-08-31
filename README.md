@@ -43,11 +43,16 @@
 - [x] Setup chat memory
 - [x] Get the system prompt from SaaS langfuse
 - [ ] Setup Evals to run on the CI/CD pipeline 
-- [ ] Generate a generic hr handbook and set up rag over the handbook. 
-- [ ] Set up evals on language to monitor kpis
-    1. Agent groundedness
+- [ ] Generate a generic hr handbook a
+- [ ] Use LlamaIndex to do rag over the handbook. 
+- [ ] Add testing for rag (ragas?)
+- [ ] Monitor metrics on langfuse
+    1. Agent accuracy
     2. Token used
     3. Time to respond
+- [ ] Build a dashboard that shows agent performance against those KPIs
+- [ ] Add Human in the Loop in case agent can not find the answer from the documents.
+- [ ] Dashboard to track when human intervention was necessary over time.
 
 ## Useful Resources
 
