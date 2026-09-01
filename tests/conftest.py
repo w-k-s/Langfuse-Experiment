@@ -1,10 +1,18 @@
 import pytest
 from dotenv import load_dotenv
+from math import sqrt
 from uuid import uuid4
 from langfuse import Langfuse, get_client
-from langchain_ollama import ChatOllama
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage
 from langfuse_experiment.graph import build_graph, build_model, ContextSchema
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel
+
+
+class JudgeResult(BaseModel):
+    score: float  # 0-1
+    reasoning: str
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -23,8 +31,82 @@ def llm() -> ChatOllama:
 
 
 @pytest.fixture(scope="session")
+def embeddings() -> OllamaEmbeddings:
+    return OllamaEmbeddings(model="nomic-embed-text")
+
+
+@pytest.fixture(scope="session")
 def graph():
     return build_graph()
+
+
+# TODO: replace with OpenAI or something because llama:7b is not a good judge
+@pytest.fixture(scope="session")
+def judge_llm(llm):
+    return llm
+
+
+@pytest.fixture(scope="session")
+def judge_chain(judge_llm):
+    judge_prompt = ChatPromptTemplate.from_template(
+        "You are grading an HR assistant's answer against a reference answer.\n"
+        "Question: {input}\n"
+        "Reference answer: {expected_output}\n"
+        "Assistant's answer: {output}\n"
+        "Give a correctness score from 0 (wrong) to 1 (matches the reference), "
+        "and a one-sentence reason."
+    )
+
+    return judge_prompt | judge_llm.with_structured_output(JudgeResult)
+
+
+@pytest.fixture(scope="session")
+def make_llm_judge_scorer(judge_chain):
+    def _make():
+        def llm_judge_scorer(*, input, output, expected_output, metadata, **kwargs):
+            if metadata.get("eval") != "llm-rubrik":
+                return []
+
+            result = judge_chain.invoke(
+                {
+                    "input": input,
+                    "output": output,
+                    "expected_output": expected_output,
+                }
+            )
+            return {
+                "name": metadata.get("eval"),
+                "value": result.score,
+                "comment": result.reasoning,
+            }
+
+        return llm_judge_scorer
+
+    return _make
+
+
+@pytest.fixture(scope="session")
+def make_semantic_similarity_scorer(embeddings):
+    def _make():
+        def semantic_similarity_scorer(
+            *, input, output, expected_output, metadata, **kwargs
+        ):
+            if metadata.get("eval") != "similar":
+                return []
+
+            actual, expected = embeddings.embed_documents([output, expected_output])
+            dot = sum(a * b for a, b in zip(actual, expected))
+            norm = sqrt(sum(a * a for a in actual)) * sqrt(sum(b * b for b in expected))
+            similarity = dot / norm if norm else 0.0
+
+            return {
+                "name": metadata.get("eval"),
+                "value": max(0.0, min(1.0, similarity)),
+            }
+
+        return semantic_similarity_scorer
+
+    return _make
 
 
 @pytest.fixture(scope="session")

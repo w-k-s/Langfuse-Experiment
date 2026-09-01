@@ -1,33 +1,51 @@
+import re
+from collections import defaultdict
+
+PATTERN = r"\w+"
+
+THRESHOLDS = {
+    "contains": 0.6,
+    "similar": 0.7,
+    "llm-rubrik": 0.5,
+}
+
+
 def keyword_overlap_scorer(*, input, output, expected_output, metadata, **kwargs):
-    if metadata.get("eval") != "contains":  # not my item — skip
-        return []  # returning [] contributes no score
-    # ... actual scoring for A ...
-    return {"name": "eval_a", "value": score}
-
-
-def semantic_similarity_scorer(*, input, output, expected_output, metadata, **kwargs):
-    if metadata.get("eval") != "similar":
+    if metadata.get("eval") != "contains":
         return []
-    # ... actual scoring for B ...
-    return {"name": "eval_b", "value": score}
+
+    output_keywords = set(re.findall(PATTERN, output))
+    expected_keywords = set(re.findall(PATTERN, expected_output))
+    overlap = len(expected_keywords & output_keywords) / len(expected_keywords)
+    return {"name": metadata.get("eval"), "value": overlap}
 
 
-def llm_judge_scorer(*, input, output, expected_output, metadata, **kwargs):
-    if metadata.get("eval") != "llm-rubrik":
-        return []
-    # ... actual scoring for B ...
-    return {"name": "eval_b", "value": score}
-
-
-def test_evals(langfuse, make_hr_agent_task):
+def test_evals(
+    langfuse,
+    make_hr_agent_task,
+    make_llm_judge_scorer,
+    make_semantic_similarity_scorer,
+):
     golden_dataset = langfuse.get_dataset("ci")
 
-    golden_dataset.run_experiment(
+    result = golden_dataset.run_experiment(
         name="ci-eval",
         task=make_hr_agent_task(),
         evaluators=[
             keyword_overlap_scorer,
-            semantic_similarity_scorer,
-            llm_judge_scorer,
+            make_semantic_similarity_scorer(),
+            make_llm_judge_scorer(),
         ],
     )
+
+    scores = defaultdict(list)
+    for item in result.item_results:
+        for e in item.evaluations:
+            scores[e.name].append(e.value)
+
+    failures = [
+        f"{name} {sum(values) / len(values):.2f} < {THRESHOLDS[name]}"
+        for name, values in scores.items()
+        if sum(values) / len(values) < THRESHOLDS[name]
+    ]
+    assert not failures, f"below threshold: {', '.join(failures)}"
