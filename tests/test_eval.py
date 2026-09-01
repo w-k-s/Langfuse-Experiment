@@ -1,6 +1,3 @@
-from langfuse import Langfuse
-
-
 def test_evals(langfuse, make_hr_agent_task):
     golden_dataset = langfuse.get_dataset("ci")
 

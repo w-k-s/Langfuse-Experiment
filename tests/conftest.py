@@ -4,7 +4,7 @@ from uuid import uuid4
 from langfuse import Langfuse, get_client
 from langchain_ollama import ChatOllama
 from langchain.messages import HumanMessage
-from main import build_graph, Deps
+from langfuse_experiment.graph import build_graph, build_model, ContextSchema
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -19,7 +19,7 @@ def langfuse() -> Langfuse:
 
 @pytest.fixture(scope="session")
 def llm() -> ChatOllama:
-    return ChatOllama(model="llama2:7b", temperature=0)
+    return build_model()
 
 
 @pytest.fixture(scope="session")
@@ -34,7 +34,7 @@ def make_hr_agent_task(langfuse, graph, llm):
             result = graph.invoke(
                 {"messages": [HumanMessage(item.input)]},
                 {"configurable": {"thread_id": str(uuid4())}},
-                context=Deps(langfuse, llm),
+                context=ContextSchema(langfuse, llm),
             )
             return result["messages"][-1].content
 

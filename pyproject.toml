@@ -18,5 +18,12 @@ dev = [
     "pytest>=9.1.1",
 ]
 
+[project.scripts]
+langfuse_experiment = "langfuse_experiment.main:main"
+
+[build-system]
+requires = ["uv-build>=0.4.0,<0.9.0"]
+build-backend = "uv_build"
+
 [tool.pytest.ini_options]
 pythonpath = ["."] # So that tests can call 

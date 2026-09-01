@@ -42,17 +42,18 @@
 - [x] Prompt gemma, falcon from langchain
 - [x] Setup chat memory
 - [x] Get the system prompt from SaaS langfuse
-- [ ] Setup Evals to run on the CI/CD pipeline 
-- [ ] Generate a generic hr handbook a
+- [ ] Setup offline Evals to run on the CI/CD pipeline 
+- [ ] Setup traces
+- [ ] Generate a generic hr handbook 
 - [ ] Use LlamaIndex to do rag over the handbook. 
 - [ ] Add testing for rag (ragas?)
-- [ ] Monitor metrics on langfuse
+- [ ] Add Human in the Loop in case agent can not find the answer from the documents.
+- [ ] Setup monitoring and online evals:
     1. Agent accuracy
     2. Token used
     3. Time to respond
+    4. Human in the loop
 - [ ] Build a dashboard that shows agent performance against those KPIs
-- [ ] Add Human in the Loop in case agent can not find the answer from the documents.
-- [ ] Dashboard to track when human intervention was necessary over time.
 
 ## Useful Resources
 
