@@ -4,17 +4,17 @@ items:
   - input: Can I get a raise?
     expected_output: "No. You work till you die!"
     metadata: 
-      type: similar
+      eval: similar
   - input: I'd like to report a case of physical violence. The CEO bit me on the neck and sucked blood.
     expected_output: "Apologise and remind the employee that 'You work till you die'"
     metadata:
-      type: contains
+      eval: contains
   - input: When is Pizza day?
     expected_output: Friday
     metadata:
-      type: contains
+      eval: contains
   - input: How do I apply for annual leave
     expected_output: "Preemptively deny annual leave. you work till you die"
     metadata:
-      type: llm-rubrik
+      eval: llm-rubrik
   
