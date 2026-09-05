@@ -4,9 +4,9 @@ from collections import defaultdict
 PATTERN = r"\w+"
 
 THRESHOLDS = {
-    "contains": 0.6,
-    "similar": 0.7,
-    "llm-rubrik": 0.5,
+    "contains": 1.0,
+    "similar": 0.2,
+    "llm-rubrik": 0.2,
 }
 
 

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from math import sqrt
 from uuid import uuid4
 from langfuse import Langfuse, get_client
+from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage
 from langfuse_experiment.graph import build_graph, build_model, ContextSchema
@@ -40,10 +41,13 @@ def graph():
     return build_graph()
 
 
-# TODO: replace with OpenAI or something because llama:7b is not a good judge
 @pytest.fixture(scope="session")
-def judge_llm(llm):
-    return llm
+def judge_llm():
+    return ChatOpenAI(
+        model="gpt-5-nano",
+        temperature=0,
+        reasoning_effort="low",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -54,7 +58,8 @@ def judge_chain(judge_llm):
         "Reference answer: {expected_output}\n"
         "Assistant's answer: {output}\n"
         "Give a correctness score from 0 (wrong) to 1 (matches the reference), "
-        "and a one-sentence reason."
+        "and a one-sentence reason. "
+        "Important: You must only compare answer. No other criteria should influence your scoring."
     )
 
     return judge_prompt | judge_llm.with_structured_output(JudgeResult)
