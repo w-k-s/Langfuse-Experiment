@@ -44,7 +44,7 @@
 - [x] Get the system prompt from SaaS langfuse
 - [x] Setup offline Evals to run on the CI/CD pipeline 
 - [x] Setup traces
-- [ ] Generate a generic hr handbook 
+- [x] Generate a generic hr handbook
 - [ ] Use LlamaIndex to do rag over the handbook. 
 - [ ] Add testing for rag (ragas?)
 - [ ] Add Human in the Loop in case agent can not find the answer from the documents.
