@@ -1,3 +1,4 @@
+from langfuse import Langfuse, propagate_attributes
 from dataclasses import dataclass
 from langfuse import Langfuse
 from langchain.chat_models import BaseChatModel
@@ -5,19 +6,45 @@ from langgraph.runtime import Runtime
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_ollama import ChatOllama
+from langchain_core.runnables import RunnableConfig
 
 
 @dataclass
 class ContextSchema:
-    prompt_registry: Langfuse
+    langfuse: Langfuse
     llm: BaseChatModel
 
 
-def call_model(state: MessagesState, runtime: Runtime[ContextSchema]):
-    prompt_client = runtime.context.prompt_registry.get_prompt("hr_agent")
-    system_prompt = prompt_client.compile()
-    ai_msg = runtime.context.llm.invoke([system_prompt] + state["messages"])
-    return {"messages": [ai_msg]}
+def call_model(
+    state: MessagesState, runtime: Runtime[ContextSchema], config: RunnableConfig
+):
+    langfuse = runtime.context.langfuse
+    llm = runtime.context.llm
+    thread_id = config["configurable"]["thread_id"]
+
+    with propagate_attributes(session_id=thread_id):
+
+        with langfuse.start_as_current_observation(
+            as_type="span", name="call-model"
+        ) as root_span:
+
+            prompt_client = langfuse.get_prompt("hr_agent")
+            system_prompt = prompt_client.compile()
+            messages = [system_prompt] + state["messages"]
+
+            with root_span.start_as_current_observation(
+                as_type="generation",
+                name="generate-response",
+                model=runtime.context.llm.model,
+                input=messages,
+                prompt=prompt_client,
+                model_parameters={"temperature": llm.temperature},
+            ) as gen:
+                ai_msg = llm.invoke(messages)
+
+                gen.update(output=ai_msg, usage_details=ai_msg.usage_metadata)
+
+                return {"messages": [ai_msg]}
 
 
 def build_model():

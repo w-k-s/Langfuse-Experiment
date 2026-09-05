@@ -19,19 +19,19 @@
 4. Publish the hr_agent prompts to langfuse prompt registry
 
     ```shell
-    uv run main.py prompts --publish hr_agent
+    uv run langfuse_experiment prompts --publish hr_agent
     ```
 
 6. Before you can runs evals, you need to publish the eval dataset to langfuse dataset registry
 
     ```shell
-    uv run main.py datasets --publish ci
+    uv run langfuse_experiment datasets --publish ci
     ```
 
 5. Chat with the agent
 
     ```
-    uv run main.py chat
+    uv run langfuse_experiment chat
     ```
 
 ![Screenshot](./docs/Screenshot.png)
@@ -42,8 +42,8 @@
 - [x] Prompt gemma, falcon from langchain
 - [x] Setup chat memory
 - [x] Get the system prompt from SaaS langfuse
-- [ ] Setup offline Evals to run on the CI/CD pipeline 
-- [ ] Setup traces
+- [x] Setup offline Evals to run on the CI/CD pipeline 
+- [x] Setup traces
 - [ ] Generate a generic hr handbook 
 - [ ] Use LlamaIndex to do rag over the handbook. 
 - [ ] Add testing for rag (ragas?)

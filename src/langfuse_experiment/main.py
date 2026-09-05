@@ -1,5 +1,6 @@
 import sys
 import argparse
+from uuid import uuid4
 from dotenv import load_dotenv
 from langfuse import get_client
 from langchain_core.runnables import RunnableConfig
@@ -13,7 +14,7 @@ def chat(langfuse):
 
     graph = build_graph()
 
-    config: RunnableConfig = {"configurable": {"thread_id": "1"}}
+    config: RunnableConfig = {"configurable": {"thread_id": str(uuid4())}}
 
     while True:
         user_input = input("Human: ")
