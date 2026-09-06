@@ -1,18 +1,11 @@
-from langfuse import Langfuse, propagate_attributes
-from dataclasses import dataclass
-from langfuse import Langfuse
+from langfuse import propagate_attributes
+from langfuse_experiment.config import ContextSchema
 from langchain.chat_models import BaseChatModel
 from langgraph.runtime import Runtime
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
-from langchain_ollama import ChatOllama
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_core.runnables import RunnableConfig
-
-
-@dataclass
-class ContextSchema:
-    langfuse: Langfuse
-    llm: BaseChatModel
 
 
 def call_model(
@@ -52,6 +45,10 @@ def build_model():
         model="llama2:7b",
         temperature=0,
     )
+
+
+def build_embeddings():
+    return OllamaEmbeddings(model="nomic-embed-text")
 
 
 def build_graph():

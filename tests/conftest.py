@@ -6,7 +6,12 @@ from langfuse import Langfuse, get_client
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage
-from langfuse_experiment.graph import build_graph, build_model, ContextSchema
+from langfuse_experiment.graph import (
+    build_graph,
+    build_model,
+    build_embeddings,
+    ContextSchema,
+)
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
@@ -33,7 +38,7 @@ def llm() -> ChatOllama:
 
 @pytest.fixture(scope="session")
 def embeddings() -> OllamaEmbeddings:
-    return OllamaEmbeddings(model="nomic-embed-text")
+    return build_embeddings()
 
 
 @pytest.fixture(scope="session")
