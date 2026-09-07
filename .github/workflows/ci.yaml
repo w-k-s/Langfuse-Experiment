@@ -2,9 +2,6 @@ name: CI
 
 on: [push]
 
-env:
-  OLLAMA_MODELS: /home/runner/.ollama/models
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,41 +18,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --group dev
 
-      # Restore cache before Ollama starts, so the models are already in place.
-      # Increment the version suffix when the model list changes to invalidate cache.
-      - name: Cache Ollama models
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.OLLAMA_MODELS }}
-          key: ollama-models-llama2-7b-nomic-embed-text-v1
-
-      - name: Install and start Ollama
-        run: |
-          set -euo pipefail
-          curl -fsSL https://ollama.com/install.sh | sh
-          sudo systemctl stop ollama 2>/dev/null || true
-          mkdir -p "$OLLAMA_MODELS"
-          ollama serve > /tmp/ollama.log 2>&1 &
-
-      - name: Wait for Ollama to be ready
-        run: |
-          for i in {1..30}; do
-            curl -sf http://localhost:11434 && exit 0
-            sleep 1
-          done
-          echo "Ollama did not become ready within 30s" >&2
-          cat /tmp/ollama.log >&2
-          exit 1
-
-      - name: Pull models
-        run: |
-          curl -s -X POST http://localhost:11434/api/pull -d '{"name": "llama2:7b"}'
-          curl -s -X POST http://localhost:11434/api/pull -d '{"name": "nomic-embed-text"}'
-
       - name: Run tests
         env:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_BASE_URL: "https://us.cloud.langfuse.com"
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: uv run pytest tests

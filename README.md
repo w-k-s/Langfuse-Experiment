@@ -8,15 +8,9 @@
     uv sync
     ```
 
-2. Copy .env with your Langfuse credentials
+2. Copy .env with your Langfuse credentials, and AWS Bedrock credentials
 
-3. This application expects llama2:7b to be running on ollama.
-
-    ```shell
-    ollama run llama2:7b
-    ```
-
-4. Publish the hr_agent prompts to langfuse prompt registry
+3. Publish the hr_agent prompts to langfuse prompt registry
 
     ```shell
     uv run langfuse_experiment prompts --publish hr_agent
@@ -38,7 +32,7 @@
 
 ## To Do
 
-- [x] Setup Ollama with gemma / falcon
+- [x] Setup ~Ollama with gemma / falcon~ Switched to Bedrock for convenience
 - [x] Prompt gemma, falcon from langchain
 - [x] Setup chat memory
 - [x] Get the system prompt from SaaS langfuse

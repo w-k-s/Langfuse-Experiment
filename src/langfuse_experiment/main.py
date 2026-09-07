@@ -1,7 +1,5 @@
-import os
 import sys
 import argparse
-import chromadb
 from uuid import uuid4
 from dotenv import load_dotenv
 from langfuse import get_client
@@ -9,10 +7,9 @@ from langchain_core.runnables import RunnableConfig
 from langchain.messages import HumanMessage
 from langfuse_experiment.llm_ops import publish_prompt, publish_dataset
 from langfuse_experiment.rag import index_document
+from langfuse_experiment.factories import build_model, build_embeddings, build_chroma
 from langfuse_experiment.graph import (
     build_graph,
-    build_model,
-    build_embeddings,
     ContextSchema,
 )
 
@@ -42,12 +39,7 @@ def chat(langfuse, chroma):
 def main():
     load_dotenv()
     langfuse = get_client()
-    chroma = chromadb.CloudClient(
-        api_key=os.getenv("CHROMA_API_KEY"),
-        database=os.getenv("CHROMA_DATABASE"),
-        tenant=os.getenv("CHROMA_TENANT"),
-        cloud_host=os.getenv("CHROMA_HOST"),
-    )
+    chroma = build_chroma()
     embeddings = build_embeddings()
 
     parser = argparse.ArgumentParser()
@@ -69,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "chat":
-        chat(langfuse)
+        chat(langfuse, chroma)
     elif args.command == "prompts":
         if args.publish:
             publish_prompt(langfuse, args.publish)

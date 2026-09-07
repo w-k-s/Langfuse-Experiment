@@ -1,10 +1,11 @@
+import langfuse_experiment.config as config
 from langfuse import propagate_attributes
 from langfuse_experiment.config import ContextSchema
 from langchain.chat_models import BaseChatModel
 from langgraph.runtime import Runtime
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
-from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_aws import ChatBedrockConverse
 from langchain_core.runnables import RunnableConfig
 
 
@@ -28,7 +29,7 @@ def call_model(
             with root_span.start_as_current_observation(
                 as_type="generation",
                 name="generate-response",
-                model=runtime.context.llm.model,
+                model=runtime.context.llm.model_id,
                 input=messages,
                 prompt=prompt_client,
                 model_parameters={"temperature": llm.temperature},
@@ -38,17 +39,6 @@ def call_model(
                 gen.update(output=ai_msg, usage_details=ai_msg.usage_metadata)
 
                 return {"messages": [ai_msg]}
-
-
-def build_model():
-    return ChatOllama(
-        model="llama2:7b",
-        temperature=0,
-    )
-
-
-def build_embeddings():
-    return OllamaEmbeddings(model="nomic-embed-text")
 
 
 def build_graph():

@@ -3,15 +3,14 @@ from dotenv import load_dotenv
 from math import sqrt
 from uuid import uuid4
 from langfuse import Langfuse, get_client
-from langchain_openai import ChatOpenAI
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage
+import langfuse_experiment.config as config
+from langfuse_experiment.factories import build_model, build_embeddings, build_chroma
 from langfuse_experiment.graph import (
     build_graph,
-    build_model,
-    build_embeddings,
     ContextSchema,
 )
+from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
@@ -32,12 +31,12 @@ def langfuse() -> Langfuse:
 
 
 @pytest.fixture(scope="session")
-def llm() -> ChatOllama:
+def llm() -> ChatBedrockConverse:
     return build_model()
 
 
 @pytest.fixture(scope="session")
-def embeddings() -> OllamaEmbeddings:
+def embeddings() -> BedrockEmbeddings:
     return build_embeddings()
 
 
@@ -47,9 +46,15 @@ def graph():
 
 
 @pytest.fixture(scope="session")
+def chroma():
+    return build_chroma()
+
+
+@pytest.fixture(scope="session")
 def judge_llm():
-    return ChatOpenAI(
-        model="gpt-5-nano",
+    return ChatBedrockConverse(
+        model_id=config.BEDROCK_LLM_JUDGE_MODEL_ID,
+        region_name=config.BEDROCK_REGION,
         temperature=0,
         reasoning_effort="low",
     )
@@ -120,13 +125,13 @@ def make_semantic_similarity_scorer(embeddings):
 
 
 @pytest.fixture(scope="session")
-def make_hr_agent_task(langfuse, graph, llm):
+def make_hr_agent_task(langfuse, graph, llm, chroma):
     def _make():
         def task(*, item, **kwargs):
             result = graph.invoke(
                 {"messages": [HumanMessage(item.input)]},
                 {"configurable": {"thread_id": str(uuid4())}},
-                context=ContextSchema(langfuse, llm),
+                context=ContextSchema(langfuse, llm, chroma),
             )
             return result["messages"][-1].content
 

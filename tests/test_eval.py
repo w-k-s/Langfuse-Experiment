@@ -14,8 +14,8 @@ def keyword_overlap_scorer(*, input, output, expected_output, metadata, **kwargs
     if metadata.get("eval") != "contains":
         return []
 
-    output_keywords = set(re.findall(PATTERN, output))
-    expected_keywords = set(re.findall(PATTERN, expected_output))
+    output_keywords = set(re.findall(PATTERN, output.lower()))
+    expected_keywords = set(re.findall(PATTERN, expected_output.lower()))
     overlap = len(expected_keywords & output_keywords) / len(expected_keywords)
     return {"name": metadata.get("eval"), "value": overlap}
 
