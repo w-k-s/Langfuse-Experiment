@@ -12,7 +12,7 @@ items:
   - input: When is Pizza day?
     expected_output: Friday
     metadata:
-      eval: contains
+      eval: similar
   - input: How do I apply for annual leave
     expected_output: "Annual leave is diened. Remind the employee that 'You work till you die'"
     metadata:
