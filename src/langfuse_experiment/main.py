@@ -2,24 +2,23 @@ import sys
 import argparse
 from uuid import uuid4
 from dotenv import load_dotenv
-from langfuse import get_client
 from langchain_core.runnables import RunnableConfig
 from langchain.messages import HumanMessage
+from langfuse_experiment.app import AppContext
 from langfuse_experiment.llm_ops import publish_prompt, publish_dataset
 from langfuse_experiment.rag import index_document
-from langfuse_experiment.factories import build_model, build_embeddings, build_chroma
-from langfuse_experiment.graph import (
-    build_graph,
-    ContextSchema,
-)
+from langfuse_experiment.graph import build_graph
 
 
-def chat(langfuse, chroma):
-    llm = build_model()
+def chat(app):
+    graph = build_graph(app)
 
-    graph = build_graph()
-
-    config: RunnableConfig = {"configurable": {"thread_id": str(uuid4())}}
+    config: RunnableConfig = {
+        "configurable": {
+            "thread_id": str(uuid4()),
+        },
+        "callbacks": [app.callback_handler],
+    }
 
     while True:
         user_input = input("Human: ")
@@ -31,16 +30,14 @@ def chat(langfuse, chroma):
         result = graph.invoke(
             {"messages": [HumanMessage(user_input)]},
             config,
-            context=ContextSchema(langfuse, llm, chroma),
+            context=app,
         )
-        print("AI: {}".format(result["messages"][-1].content))
+        print("AI: {}".format(result["messages"][-1].text))
 
 
 def main():
     load_dotenv()
-    langfuse = get_client()
-    chroma = build_chroma()
-    embeddings = build_embeddings()
+    app = AppContext()
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -61,16 +58,16 @@ def main():
     args = parser.parse_args()
 
     if args.command == "chat":
-        chat(langfuse, chroma)
+        chat(app)
     elif args.command == "prompts":
         if args.publish:
-            publish_prompt(langfuse, args.publish)
+            publish_prompt(app, args.publish)
     elif args.command == "datasets":
         if args.publish:
-            publish_dataset(langfuse, args.publish)
+            publish_dataset(app, args.publish)
     elif args.command == "rag":
         if args.index:
-            index_document(chroma, embeddings, args.index)
+            index_document(app, args.index)
     else:
         parser.print_help()
         sys.exit(1)

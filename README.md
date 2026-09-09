@@ -30,6 +30,28 @@
 
 ![Screenshot](./docs/Screenshot.png)
 
+## AWS Permission Policy
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Statement1",
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:InvokeModel"
+            ],
+            "Resource": [
+                "arn:aws:bedrock:ap-south-1::foundation-model/amazon.titan-embed-text-v2:0",
+                "arn:aws:bedrock:ap-south-1::foundation-model/openai.gpt-oss-20b-1:0",
+                "arn:aws:bedrock:ap-south-1::foundation-model/openai.gpt-oss-120b-1:0"
+            ]
+        }
+    ]
+}
+```
+
 ## To Do
 
 - [x] Setup ~Ollama with gemma / falcon~ Switched to Bedrock for convenience
@@ -41,8 +63,9 @@
 - [x] Generate a generic hr handbook
 - [ ] RAG
     - [x] Indexing (docling -> MarkdownHeaderTextSplitter -> Embedding -> Chroma) 
-    - [ ] Retrieval (Hybrid -> Rerank -> Response) 
-- [ ] Evaluate RAG offline with RAGAS
+    - [x] Retrieval (Hybrid -> Rerank -> Response)**
+    - [ ] Update offline eval dataset with
+    - [ ] Evaluate RAG offline with RAGAS
 - [ ] Add Human in the Loop in case agent can not find the answer from the documents.
 - [ ] Schedule online evals:
 - [ ] Build a dashboard that shows agent performance against KPIs:
@@ -50,6 +73,8 @@
     2. Token used
     3. Time to respond
     4. Human in the loop
+
+** _Rerank descoped due to additional subscription required for cohere rerank_
 
 ## Useful Resources
 

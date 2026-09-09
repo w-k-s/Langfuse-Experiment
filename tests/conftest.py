@@ -2,15 +2,13 @@ import pytest
 from dotenv import load_dotenv
 from math import sqrt
 from uuid import uuid4
-from langfuse import Langfuse, get_client
 from langchain.messages import HumanMessage
 import langfuse_experiment.config as config
-from langfuse_experiment.factories import build_model, build_embeddings, build_chroma
 from langfuse_experiment.graph import (
     build_graph,
-    ContextSchema,
+    AppContext,
 )
-from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
+from langchain_aws import ChatBedrockConverse
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
@@ -26,28 +24,13 @@ def load_env() -> None:
 
 
 @pytest.fixture(scope="session")
-def langfuse() -> Langfuse:
-    return get_client()
+def app() -> AppContext:
+    return AppContext()
 
 
 @pytest.fixture(scope="session")
-def llm() -> ChatBedrockConverse:
-    return build_model()
-
-
-@pytest.fixture(scope="session")
-def embeddings() -> BedrockEmbeddings:
-    return build_embeddings()
-
-
-@pytest.fixture(scope="session")
-def graph():
-    return build_graph()
-
-
-@pytest.fixture(scope="session")
-def chroma():
-    return build_chroma()
+def graph(app: AppContext):
+    return build_graph(app)
 
 
 @pytest.fixture(scope="session")
@@ -101,7 +84,7 @@ def make_llm_judge_scorer(judge_chain):
 
 
 @pytest.fixture(scope="session")
-def make_semantic_similarity_scorer(embeddings):
+def make_semantic_similarity_scorer(app: AppContext):
     def _make():
         def semantic_similarity_scorer(
             *, input, output, expected_output, metadata, **kwargs
@@ -109,7 +92,7 @@ def make_semantic_similarity_scorer(embeddings):
             if metadata.get("eval") != "similar":
                 return []
 
-            actual, expected = embeddings.embed_documents([output, expected_output])
+            actual, expected = app.embeddings.embed_documents([output, expected_output])
             dot = sum(a * b for a, b in zip(actual, expected))
             norm = sqrt(sum(a * a for a in actual)) * sqrt(sum(b * b for b in expected))
             similarity = dot / norm if norm else 0.0
@@ -125,15 +108,18 @@ def make_semantic_similarity_scorer(embeddings):
 
 
 @pytest.fixture(scope="session")
-def make_hr_agent_task(langfuse, graph, llm, chroma):
+def make_hr_agent_task(app: AppContext, graph):
     def _make():
         def task(*, item, **kwargs):
             result = graph.invoke(
                 {"messages": [HumanMessage(item.input)]},
-                {"configurable": {"thread_id": str(uuid4())}},
-                context=ContextSchema(langfuse, llm, chroma),
+                {
+                    "configurable": {"thread_id": str(uuid4())},
+                    "callbacks": [app.callback_handler],
+                },
+                context=app,
             )
-            return result["messages"][-1].content
+            return result["messages"][-1].text
 
         return task
 

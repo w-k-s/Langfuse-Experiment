@@ -1,8 +1,9 @@
-from importlib import resources
 import yaml
+from importlib import resources
+from langfuse_experiment.app import AppContext
 
 
-def publish_prompt(langfuse, prompt_name):
+def publish_prompt(app: AppContext, prompt_name):
     try:
         with (
             resources.files("prompts")
@@ -12,12 +13,12 @@ def publish_prompt(langfuse, prompt_name):
             # TODO: Map to a struct, validate required fields
             prompt_dic = yaml.safe_load(f)
             print(prompt_dic)
-            langfuse.create_prompt(**prompt_dic)
+            app.langfuse.create_prompt(**prompt_dic)
     except Exception as e:
         print(e)
 
 
-def publish_dataset(langfuse, dataset_name):
+def publish_dataset(app: AppContext, dataset_name):
     try:
         with (
             resources.files("datasets")
@@ -32,13 +33,13 @@ def publish_dataset(langfuse, dataset_name):
             description = dataset_dic["description"]
             items = dataset_dic["items"]
 
-            langfuse.create_dataset(
+            app.langfuse.create_dataset(
                 name=name,
                 description=description,
             )
 
             [
-                langfuse.create_dataset_item(
+                app.langfuse.create_dataset_item(
                     dataset_name=name,
                     input=i["input"],
                     expected_output=i["expected_output"],

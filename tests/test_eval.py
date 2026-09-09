@@ -21,12 +21,12 @@ def keyword_overlap_scorer(*, input, output, expected_output, metadata, **kwargs
 
 
 def test_evals(
-    langfuse,
+    app,
     make_hr_agent_task,
     make_llm_judge_scorer,
     make_semantic_similarity_scorer,
 ):
-    golden_dataset = langfuse.get_dataset("ci")
+    golden_dataset = app.langfuse.get_dataset("ci")
 
     result = golden_dataset.run_experiment(
         name="ci-eval",

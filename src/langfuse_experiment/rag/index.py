@@ -5,10 +5,10 @@ from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
     RecursiveCharacterTextSplitter,
 )
-from langchain_chroma import Chroma
+from langfuse_experiment.app import AppContext
 
 
-def index_document(chroma, embeddings, file_name):
+def index_document(app: AppContext, file_name):
     try:
         path = resources.files("kb").joinpath(file_name)
         loader = DoclingLoader(
@@ -50,17 +50,11 @@ def index_document(chroma, embeddings, file_name):
         )
         final_chunks = char_splitter.split_documents(header_split_docs)
 
-        vectorstore = Chroma(
-            client=chroma,
-            collection_name="langfuse-experiment",
-            embedding_function=embeddings,
-        )
-
         for chunk in final_chunks:
             chunk.metadata.update(source_metadata)
 
-        _ids = vectorstore.add_documents(final_chunks)
-        print("Indexing completed")
+        _ids = app.chroma.add_documents(final_chunks)
+        print("Indexing completed: {} chunks".format(len(_ids)))
 
     except Exception as e:
-        print(e)
+        raise RuntimeError("Indexing {} failed".format(file_name)) from e

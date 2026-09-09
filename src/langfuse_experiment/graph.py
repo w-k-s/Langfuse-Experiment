@@ -1,49 +1,32 @@
-import langfuse_experiment.config as config
-from langfuse import propagate_attributes
-from langfuse_experiment.config import ContextSchema
-from langchain.chat_models import BaseChatModel
-from langgraph.runtime import Runtime
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langfuse_experiment.app import AppContext
+from langchain.agents import create_agent
+from langchain.agents.middleware import ModelRequest, dynamic_prompt
 from langgraph.checkpoint.memory import InMemorySaver
-from langchain_aws import ChatBedrockConverse
-from langchain_core.runnables import RunnableConfig
+from langchain_core.tools.retriever import create_retriever_tool
 
 
-def call_model(
-    state: MessagesState, runtime: Runtime[ContextSchema], config: RunnableConfig
-):
-    langfuse = runtime.context.langfuse
-    llm = runtime.context.llm
-    thread_id = config["configurable"]["thread_id"]
-
-    with propagate_attributes(session_id=thread_id):
-
-        with langfuse.start_as_current_observation(
-            as_type="span", name="call-model"
-        ) as root_span:
-
-            prompt_client = langfuse.get_prompt("hr_agent")
-            system_prompt = prompt_client.compile()
-            messages = [system_prompt] + state["messages"]
-
-            with root_span.start_as_current_observation(
-                as_type="generation",
-                name="generate-response",
-                model=runtime.context.llm.model_id,
-                input=messages,
-                prompt=prompt_client,
-                model_parameters={"temperature": llm.temperature},
-            ) as gen:
-                ai_msg = llm.invoke(messages)
-
-                gen.update(output=ai_msg, usage_details=ai_msg.usage_metadata)
-
-                return {"messages": [ai_msg]}
+@dynamic_prompt
+def hr_agent_prompt(request: ModelRequest) -> str:
+    prompt_client = request.runtime.context.langfuse.get_prompt("hr_agent")
+    return prompt_client.compile()
 
 
-def build_graph():
-    workflow = StateGraph(MessagesState, context_schema=ContextSchema)
-    workflow.add_node(call_model)
-    workflow.add_edge(START, "call_model")
-    workflow.add_edge("call_model", END)
-    return workflow.compile(checkpointer=InMemorySaver())
+def build_graph(app: AppContext):
+    retriever_tool = create_retriever_tool(
+        app.retriever,
+        name="search_hr_manuals",
+        description=(
+            "Search the company HR policies and procedures manuals. "
+            "Use this for any question about HR policy, leave, benefits, "
+            "notice periods, disciplinary procedures, or workplace conduct. "
+            "Input should be a focused natural-language query."
+        ),
+    )
+
+    return create_agent(
+        app.llm,
+        tools=[retriever_tool],
+        middleware=[hr_agent_prompt],
+        context_schema=AppContext,
+        checkpointer=InMemorySaver(),
+    )
