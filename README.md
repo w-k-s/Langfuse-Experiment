@@ -61,13 +61,13 @@
 - [x] Setup offline Evals to run on the CI/CD pipeline 
 - [x] Setup traces
 - [x] Generate a generic hr handbook
-- [ ] RAG
+- [x] RAG + offline evals
     - [x] Indexing (docling -> MarkdownHeaderTextSplitter -> Embedding -> Chroma) 
     - [x] Retrieval (Hybrid -> Rerank -> Response)**
-    - [ ] Update offline eval dataset with
-    - [ ] Evaluate RAG offline with RAGAS
+    - [x] Update offline eval dataset with HR manual
+    - [x] Evaluate RAG with offline evals
+- [ ] Schedule online evals.
 - [ ] Add Human in the Loop in case agent can not find the answer from the documents.
-- [ ] Schedule online evals:
 - [ ] Build a dashboard that shows agent performance against KPIs:
     1. Agent accuracy
     2. Token used

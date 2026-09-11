@@ -1,43 +1,25 @@
-import re
 from collections import defaultdict
 
-PATTERN = r"\w+"
-
 THRESHOLDS = {
-    "contains": 1.0,
-    "similar": 0.2,
-    "llm-rubrik": 0.2,
+    "faithfulness": 0.6,
+    "answer_relevancy": 0.6,
 }
-
-
-def keyword_overlap_scorer(*, input, output, expected_output, metadata, **kwargs):
-    if metadata.get("eval") != "contains":
-        return []
-
-    output_keywords = set(re.findall(PATTERN, output.lower()))
-    expected_keywords = set(re.findall(PATTERN, expected_output.lower()))
-    overlap = len(expected_keywords & output_keywords) / len(expected_keywords)
-    return {"name": metadata.get("eval"), "value": overlap}
 
 
 def test_evals(
     app,
-    make_hr_agent_task,
-    make_llm_judge_scorer,
-    make_semantic_similarity_scorer,
+    make_rag_task,
+    ragas_evaluators,
 ):
-    golden_dataset = app.langfuse.get_dataset("ci")
+    rag_dataset = app.langfuse.get_dataset("rag_dataset")
 
-    result = golden_dataset.run_experiment(
+    result = rag_dataset.run_experiment(
         name="ci-eval",
-        task=make_hr_agent_task(),
-        evaluators=[
-            keyword_overlap_scorer,
-            make_semantic_similarity_scorer(),
-            make_llm_judge_scorer(),
-        ],
+        task=make_rag_task(),
+        evaluators=ragas_evaluators,
     )
 
+    print(result.format())
     scores = defaultdict(list)
     for item in result.item_results:
         for e in item.evaluations:

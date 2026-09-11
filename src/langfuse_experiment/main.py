@@ -17,7 +17,7 @@ def chat(app):
         "configurable": {
             "thread_id": str(uuid4()),
         },
-        "callbacks": [app.callback_handler],
+        "callbacks": [app.callback_handler],  # langfuse tracing
     }
 
     while True:

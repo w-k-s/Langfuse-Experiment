@@ -40,13 +40,14 @@ def publish_dataset(app: AppContext, dataset_name):
 
             [
                 app.langfuse.create_dataset_item(
+                    id=i["id"],
                     dataset_name=name,
                     input=i["input"],
                     expected_output=i["expected_output"],
-                    metadata=i["metadata"],
+                    metadata=i.get("metadata") or {},
                 )
                 for i in items
             ]
 
     except Exception as e:
-        print(e)
+        raise RuntimeError("Publishing dataset {} failed".format(dataset_name)) from e

@@ -1,21 +1,24 @@
+from langfuse import Evaluation
 import pytest
 from dotenv import load_dotenv
-from math import sqrt
+
 from uuid import uuid4
 from langchain.messages import HumanMessage
+from ragas import RunConfig, SingleTurnSample
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.llms import LangchainLLMWrapper
+from ragas.metrics import (
+    Faithfulness,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    ResponseRelevancy,
+)
 import langfuse_experiment.config as config
 from langfuse_experiment.graph import (
     build_graph,
     AppContext,
 )
 from langchain_aws import ChatBedrockConverse
-from langchain_core.prompts import ChatPromptTemplate
-from pydantic import BaseModel
-
-
-class JudgeResult(BaseModel):
-    score: float  # 0-1
-    reasoning: str
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,83 +47,57 @@ def judge_llm():
 
 
 @pytest.fixture(scope="session")
-def judge_chain(judge_llm):
-    judge_prompt = ChatPromptTemplate.from_template(
-        "You are grading an HR assistant's answer against a reference answer.\n"
-        "Question: {input}\n"
-        "Reference answer: {expected_output}\n"
-        "Assistant's answer: {output}\n"
-        "Give a correctness score from 0 (wrong) to 1 (matches the reference), "
-        "and a one-sentence reason. "
-        "Important: You must only compare answer. No other criteria should influence your scoring."
-    )
+def ragas_metrics(judge_llm, app):
+    metrics = [Faithfulness(), ResponseRelevancy()]
+    llm = LangchainLLMWrapper(judge_llm)
+    embeddings = LangchainEmbeddingsWrapper(app.embeddings)
 
-    return judge_prompt | judge_llm.with_structured_output(JudgeResult)
+    for metric in metrics:
+        if isinstance(metric, MetricWithLLM):
+            metric.llm = llm
+        if isinstance(metric, MetricWithEmbeddings):
+            metric.embeddings = embeddings
+        metric.init(RunConfig())
+    return metrics
 
 
 @pytest.fixture(scope="session")
-def make_llm_judge_scorer(judge_chain):
-    def _make():
-        def llm_judge_scorer(*, input, output, expected_output, metadata, **kwargs):
-            if metadata.get("eval") != "llm-rubrik":
-                return []
-
-            result = judge_chain.invoke(
-                {
-                    "input": input,
-                    "output": output,
-                    "expected_output": expected_output,
-                }
+def ragas_evaluators(ragas_metrics):
+    def make_ragas_evaluator(metric):
+        async def evaluator(*, input, output, **kwargs):
+            sample = SingleTurnSample(
+                user_input=input,
+                retrieved_contexts=output["contexts"],
+                response=output["answer"],
             )
-            return {
-                "name": metadata.get("eval"),
-                "value": result.score,
-                "comment": result.reasoning,
-            }
+            score = await metric.single_turn_ascore(sample)
+            return Evaluation(name=metric.name, value=float(score))
 
-        return llm_judge_scorer
+        return evaluator
 
-    return _make
+    return [make_ragas_evaluator(metric) for metric in ragas_metrics]
 
 
 @pytest.fixture(scope="session")
-def make_semantic_similarity_scorer(app: AppContext):
+def make_rag_task(app, graph):
     def _make():
-        def semantic_similarity_scorer(
-            *, input, output, expected_output, metadata, **kwargs
-        ):
-            if metadata.get("eval") != "similar":
-                return []
+        def rag_task(*, item, **kwargs):
+            question = item.input
+            contexts = [d.page_content for d in app.retriever.invoke(question)]
 
-            actual, expected = app.embeddings.embed_documents([output, expected_output])
-            dot = sum(a * b for a, b in zip(actual, expected))
-            norm = sqrt(sum(a * a for a in actual)) * sqrt(sum(b * b for b in expected))
-            similarity = dot / norm if norm else 0.0
-
-            return {
-                "name": metadata.get("eval"),
-                "value": max(0.0, min(1.0, similarity)),
-            }
-
-        return semantic_similarity_scorer
-
-    return _make
-
-
-@pytest.fixture(scope="session")
-def make_hr_agent_task(app: AppContext, graph):
-    def _make():
-        def task(*, item, **kwargs):
-            result = graph.invoke(
+            response = graph.invoke(
                 {"messages": [HumanMessage(item.input)]},
                 {
                     "configurable": {"thread_id": str(uuid4())},
-                    "callbacks": [app.callback_handler],
                 },
                 context=app,
             )
-            return result["messages"][-1].text
+            # Return the contexts alongside the answer so evaluators can verify against them
+            return {
+                "answer": response["messages"][-1].text,
+                "contexts": contexts,
+            }
 
-        return task
+        return rag_task
 
     return _make

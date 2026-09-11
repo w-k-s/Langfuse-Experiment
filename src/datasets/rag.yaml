@@ -1,0 +1,47 @@
+name: rag_dataset
+description: "RAG Dataset"
+items:
+  - id: "rag_dataset_item_1"
+    input: How many hours a week am I supposed to work, and how long is my lunch break?
+    expected_output: >-
+      Day employees are expected to work no more than 54 hours a week, and night workers not
+      more than 48 hours a week; for this purpose a week consists of 6 days (Section 4.1,
+      Working Hours). Employees working on a shift basis are guided by their departmental rotas.
+      Employees are allowed a lunch break of minimum thirty minutes and maximum 45 minutes
+      (Section 4.1.2, Lunch Period). No one is allowed to take breaks outside the hospital -
+      requests for breaks outside the hospital must be made through the Human Resources Officer.
+
+  - id: "rag_dataset_item_2"
+    input: I worked late every evening last week. How does overtime pay work?
+    expected_output: >-
+      Overtime must be requested by your Head of Department and given final approval by the
+      Human Resources Officer - if you work overtime without the HRO's approval it shall not
+      be paid (Section 4.1.3, Overtime). Only employees who do not have supervisory roles are
+      compensated either through compensatory leave or in monetary terms; supervisors and
+      managers are compensated by time off equivalent to the additional hours worked, and that
+      compensatory leave must be taken within the quarter in which it is earned or it is
+      forfeited. Where monetary compensation is paid, hours worked beyond normal hours during
+      weekdays are paid at 1.5 times the hourly rate. Overtime plus normal hours must not exceed
+      144 hours for night workers or 116 hours for day employees in any two consecutive weeks.
+
+  - id: "rag_dataset_item_3"
+    input: I've been off sick for a week. What is the sick leave policy and do I still get paid?
+    expected_output: >-
+      After two (2) consecutive months of service, you are entitled to a maximum of seven (7)
+      working days sick leave with full pay, and thereafter a maximum of seven (7) working days
+      with half pay, in each period of twelve consecutive months, subject to production of a
+      certificate of incapacity to work signed by a qualified medical practitioner
+      (Section 6.2.3, Sick Leave). You must promptly notify your immediate supervisor of your
+      condition and inability to report for work - failure to do so is construed as dereliction
+      of duty and may attract disciplinary action. A medical report from an approved practitioner
+      is required on the day you fall sick and may be sent electronically. Where sick leave
+      exceeds seven continuous days, SBH may refer the case to an approved medical practitioner
+      for advice on your prospects of recovery and fitness to resume duty.
+
+  - id: "rag_dataset_item_4"
+    input: Can I get a salary advance this month? Money is tight.
+    expected_output: >-
+      No. Salary advances will not be provided (Section 5.2.3, Pay and Deductions). Employees
+      are paid in arrears once in a calendar month by electronic transfer, net of statutory
+      deductions such as P.A.Y.E, NSSF and NHIF. Reasonable out-of-pocket expenses incurred
+      in the course of business may be reimbursed upon prior approval.
