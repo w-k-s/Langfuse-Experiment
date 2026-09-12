@@ -1,6 +1,7 @@
-name: CI
-
-on: [push]
+name: Run Online Evals
+on:
+  schedule:
+    - cron: "0 8 * * 2" # Once a week, because I don't expect to come back to this project much
 
 jobs:
   test:
@@ -18,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --group dev
 
-      - name: Run offline evals
+      - name: Run tests
         env:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
@@ -29,4 +30,4 @@ jobs:
           CHROMA_API_KEY: ${{ secrets.CHROMA_API_KEY }}
           CHROMA_TENANT: ${{ secrets.CHROMA_TENANT }}
           CHROMA_DATABASE: Langfuse-Experiment
-        run: uv run pytest -s -m offline
+        run: uv run pytest -s -m online

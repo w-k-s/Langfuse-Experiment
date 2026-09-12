@@ -66,7 +66,7 @@
     - [x] Retrieval (Hybrid -> Rerank -> Response)**
     - [x] Update offline eval dataset with HR manual
     - [x] Evaluate RAG with offline evals
-- [ ] Schedule online evals.
+- [x] Schedule online evals.
 - [ ] Add Human in the Loop in case agent can not find the answer from the documents.
 - [ ] Build a dashboard that shows agent performance against KPIs:
     1. Agent accuracy
@@ -75,7 +75,3 @@
     4. Human in the loop
 
 ** _Rerank descoped due to additional subscription required for cohere rerank_
-
-## Useful Resources
-
-- [Prompt Managment] https://langfuse.com/docs/prompt-management/get-started
