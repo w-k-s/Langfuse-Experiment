@@ -4,7 +4,7 @@ import json
 from collections import defaultdict
 
 from langchain_core.messages import AIMessage
-from ragas import SingleTurnSample
+from ragas.metrics.collections import Faithfulness
 
 THRESHOLDS = {
     "faithfulness": 0.6,
@@ -33,9 +33,9 @@ def test_offline_evals(
             scores[e.name].append(e.value)
 
     failures = [
-        f"{name} {sum(values) / len(values):.2f} < {THRESHOLDS[name]}"
+        f"{name} {sum(values) / len(values):.2f} <= {THRESHOLDS[name]}"
         for name, values in scores.items()
-        if sum(values) / len(values) < THRESHOLDS[name]
+        if sum(values) / len(values) <= THRESHOLDS[name]
     ]
     assert not failures, f"below threshold: {', '.join(failures)}"
 
@@ -75,15 +75,22 @@ def test_online_eval(app, ragas_metrics):
                 ),
             )
 
-            sample = SingleTurnSample(
-                user_input=question,
-                retrieved_contexts=contexts,
-                response=answer,
-            )
             for metric in ragas_metrics:
-                score = await metric.single_turn_ascore(sample)
+                if isinstance(metric, Faithfulness):
+                    result = await metric.ascore(
+                        user_input=question,
+                        response=answer,
+                        retrieved_contexts=contexts,
+                    )
+                else:
+                    result = await metric.ascore(
+                        user_input=question,
+                        response=answer,
+                    )
                 app.langfuse.create_score(
-                    name=metric.name, value=float(score), trace_id=trace.trace_id
+                    name=metric.name,
+                    value=float(result.value),
+                    trace_id=trace.trace_id,
                 )
 
     asyncio.run(score_traces())

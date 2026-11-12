@@ -1,25 +1,17 @@
 import sys
+import time
 import argparse
-from uuid import uuid4
 from dotenv import load_dotenv
-from langchain_core.runnables import RunnableConfig
 from langchain.messages import HumanMessage
 from langfuse_experiment.app import AppContext
 from langfuse_experiment.llm_ops import publish_prompt, publish_dataset
 from langfuse_experiment.rag import index_document
 from langfuse_experiment.graph import build_graph
+from langfuse_experiment.telegram import send, listen
 
 
-def chat(app):
-    graph = build_graph(app)
-
-    config: RunnableConfig = {
-        "configurable": {
-            "thread_id": str(uuid4()),
-        },
-        "callbacks": [app.callback_handler],  # langfuse tracing
-    }
-
+def chat(graph, app: AppContext):
+    config = app.runnable_config()
     while True:
         user_input = input("Human: ")
 
@@ -32,12 +24,24 @@ def chat(app):
             config,
             context=app,
         )
+
+        if result.get("__interrupt__"):
+            hr_prompt = result["__interrupt__"][0].value
+            print(f"[Waiting on HR staff to reply on WhatsApp]: {hr_prompt}")
+
+            state = graph.get_state(config)
+            while state.next:
+                time.sleep(5)
+                state = graph.get_state(config)
+            result = state.values
+
         print("AI: {}".format(result["messages"][-1].text))
 
 
 def main():
     load_dotenv()
     app = AppContext()
+    graph = build_graph(app)
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -55,10 +59,16 @@ def main():
     rag_subparser = subparsers.add_parser("rag", help="RAG Actions")
     rag_subparser.add_argument("-i", "--index", help="Index document")
 
+    jabber_subparser = subparsers.add_parser("telegram", help="Test Telegram")
+    jabber_subparser.add_argument("-s", "--send", help="Message to send")
+    jabber_subparser.add_argument(
+        "-l", "--listen", action="store_true", help="Run Telegram Listener (blocking)"
+    )
+
     args = parser.parse_args()
 
     if args.command == "chat":
-        chat(app)
+        chat(graph=graph, app=app)
     elif args.command == "prompts":
         if args.publish:
             publish_prompt(app, args.publish)
@@ -68,6 +78,11 @@ def main():
     elif args.command == "rag":
         if args.index:
             index_document(app, args.index)
+    elif args.command == "jabber":
+        if args.send:
+            send(args.send, to=args.to)
+        if args.listen:
+            listen(app=app, graph=graph)
     else:
         parser.print_help()
         sys.exit(1)

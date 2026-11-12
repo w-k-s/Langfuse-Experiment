@@ -1,17 +1,16 @@
-from langfuse import Evaluation
+import os
+import litellm
 import pytest
 from dotenv import load_dotenv
 
 from uuid import uuid4
+from langfuse import Evaluation
 from langchain.messages import HumanMessage
-from ragas import RunConfig, SingleTurnSample
-from ragas.embeddings import LangchainEmbeddingsWrapper
-from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import (
+from ragas.embeddings.base import embedding_factory
+from ragas.llms import llm_factory
+from ragas.metrics.collections import (
     Faithfulness,
-    MetricWithEmbeddings,
-    MetricWithLLM,
-    ResponseRelevancy,
+    AnswerRelevancy,
 )
 import langfuse_experiment.config as config
 from langfuse_experiment.graph import (
@@ -19,6 +18,12 @@ from langfuse_experiment.graph import (
     AppContext,
 )
 from langchain_aws import ChatBedrockConverse
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "env(name): mark test to run only on named environment"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -47,31 +52,40 @@ def judge_llm():
 
 
 @pytest.fixture(scope="session")
-def ragas_metrics(judge_llm, app):
-    metrics = [Faithfulness(), ResponseRelevancy()]
-    llm = LangchainLLMWrapper(judge_llm)
-    embeddings = LangchainEmbeddingsWrapper(app.embeddings)
+def ragas_metrics():
 
-    for metric in metrics:
-        if isinstance(metric, MetricWithLLM):
-            metric.llm = llm
-        if isinstance(metric, MetricWithEmbeddings):
-            metric.embeddings = embeddings
-        metric.init(RunConfig())
-    return metrics
+    os.environ["AWS_REGION_NAME"] = config.BEDROCK_REGION
+    llm = llm_factory(
+        f"bedrock/{config.BEDROCK_LLM_JUDGE_MODEL_ID}",
+        provider="litellm",
+        client=litellm.completion,
+        temperature=0,
+    )
+
+    embeddings = embedding_factory(
+        "litellm",
+        model=f"bedrock/{config.BEDROCK_EMBEDDING_MODEL_ID}",
+    )
+
+    return [Faithfulness(llm), AnswerRelevancy(llm, embeddings)]
 
 
 @pytest.fixture(scope="session")
 def ragas_evaluators(ragas_metrics):
     def make_ragas_evaluator(metric):
         async def evaluator(*, input, output, **kwargs):
-            sample = SingleTurnSample(
-                user_input=input,
-                retrieved_contexts=output["contexts"],
-                response=output["answer"],
-            )
-            score = await metric.single_turn_ascore(sample)
-            return Evaluation(name=metric.name, value=float(score))
+            if isinstance(metric, Faithfulness):
+                result = await metric.ascore(
+                    user_input=input,
+                    response=output["answer"],
+                    retrieved_contexts=output["contexts"],
+                )
+            else:
+                result = await metric.ascore(
+                    user_input=input,
+                    response=output["answer"],
+                )
+            return Evaluation(name=metric.name, value=float(result.value))
 
         return evaluator
 

@@ -1,5 +1,6 @@
 import os
 import chromadb
+from uuid import uuid4
 from typing import Any
 from langfuse import Langfuse, get_client
 from langfuse.langchain import CallbackHandler
@@ -8,6 +9,7 @@ from langchain.chat_models import BaseChatModel
 from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
 from langchain_core.vectorstores import VectorStoreRetriever
 import langfuse_experiment.config as config
+from langchain_core.runnables import RunnableConfig
 
 
 class AppContext:
@@ -28,6 +30,15 @@ class AppContext:
         self.retriever = self.chroma.as_retriever(
             search_kwargs={"k": config.RETRIEVER_K}
         )
+
+    def runnable_config(self, thread_id: str = None) -> RunnableConfig:
+        thread_id = thread_id or str(uuid4())
+        return {
+            "configurable": {
+                "thread_id": thread_id,
+            },
+            "callbacks": [self.callback_handler],  # langfuse tracing
+        }
 
 
 def _build_model():

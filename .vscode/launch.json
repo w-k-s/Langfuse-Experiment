@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "chat",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "langfuse_experiment.main",
+      "args": ["chat"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "justMyCode": false
+    },
+    {
+      "name": "pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-s", "-vv"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "justMyCode": false
+    }
+  ]
+}

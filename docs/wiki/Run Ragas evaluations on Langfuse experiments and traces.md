@@ -19,7 +19,7 @@ The division of labor is clean: Ragas defines and computes the metric, Langfuse 
 
 ## Run Ragas metrics in a Langfuse experiment [#run-ragas-metrics-in-a-langfuse-experiment]
 
-The Langfuse Python SDK v4 experiment runner (`run_experiment`) accepts a list of evaluator functions and supports async evaluators, which is exactly what a Ragas metric needs. The steps below build a complete experiment: a dataset of questions, a small RAG task, and Ragas `Faithfulness` and `ResponseRelevancy` as evaluators. See [Experiments via SDK](/docs/evaluation/experiments/experiments-via-sdk) for the full experiment runner reference.
+The Langfuse Python SDK v4 experiment runner (`run_experiment`) accepts a list of evaluator functions and supports async evaluators, which is exactly what a Ragas metric needs. The steps below build a complete experiment: a dataset of questions, a small RAG task, and Ragas `Faithfulness` and `AnswerRelevancy` as evaluators. See [Experiments via SDK](/docs/evaluation/experiments/experiments-via-sdk) for the full experiment runner reference.
 
 ### 1. Install dependencies and configure credentials
 
@@ -42,7 +42,7 @@ os.environ.setdefault("OPENAI_API_KEY", "sk-proj-...");
 
 ### 2. Initialize the Ragas metrics
 
-Ragas metrics need a judge LLM, and some (like `ResponseRelevancy`) also need an embedding model. Initialize them once and reuse them across evaluators.
+Ragas metrics need a judge LLM, and some (like `AnswerRelevancy`) also need an embedding model. Initialize them once and reuse them across evaluators.
 
 ```python
 from langchain_openai.chat_models import ChatOpenAI
@@ -50,11 +50,11 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import Faithfulness, ResponseRelevancy
+from ragas.metrics.collections import Faithfulness, AnswerRelevancy
 from ragas.metrics.base import MetricWithEmbeddings, MetricWithLLM
 from ragas.run_config import RunConfig
 
-metrics = [Faithfulness(), ResponseRelevancy()]
+metrics = [Faithfulness(), AnswerRelevancy()]
 
 llm = LangchainLLMWrapper(ChatOpenAI())
 embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
