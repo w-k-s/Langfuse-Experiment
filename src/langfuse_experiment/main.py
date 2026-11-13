@@ -8,6 +8,7 @@ from langfuse_experiment.llm_ops import publish_prompt, publish_dataset
 from langfuse_experiment.rag import index_document
 from langfuse_experiment.graph import build_graph
 from langfuse_experiment.telegram import send, listen
+from langfuse_experiment.db import create_tables, create_interrupt
 
 
 def chat(graph, app: AppContext):
@@ -26,8 +27,18 @@ def chat(graph, app: AppContext):
         )
 
         if result.get("__interrupt__"):
-            hr_prompt = result["__interrupt__"][0].value
-            print(f"[Waiting on HR staff to reply on WhatsApp]: {hr_prompt}")
+            pending = result["__interrupt__"][0]
+            question = pending.value
+            print(f"[Sending question to HR on Telegram]: {question}")
+
+            chat_id, message_id = send(msg=question)
+            create_interrupt(
+                chat_id=chat_id,
+                message_id=message_id,
+                thread_id=config["configurable"]["thread_id"],
+                agent_question=question,
+                interrupt_id=pending.id,
+            )
 
             state = graph.get_state(config)
             while state.next:
@@ -40,6 +51,7 @@ def chat(graph, app: AppContext):
 
 def main():
     load_dotenv()
+    create_tables()
     app = AppContext()
     graph = build_graph(app)
 
@@ -59,9 +71,9 @@ def main():
     rag_subparser = subparsers.add_parser("rag", help="RAG Actions")
     rag_subparser.add_argument("-i", "--index", help="Index document")
 
-    jabber_subparser = subparsers.add_parser("telegram", help="Test Telegram")
-    jabber_subparser.add_argument("-s", "--send", help="Message to send")
-    jabber_subparser.add_argument(
+    messaging_subparser = subparsers.add_parser("telegram", help="Test Telegram")
+    messaging_subparser.add_argument("-s", "--send", help="Message to send")
+    messaging_subparser.add_argument(
         "-l", "--listen", action="store_true", help="Run Telegram Listener (blocking)"
     )
 
@@ -78,9 +90,9 @@ def main():
     elif args.command == "rag":
         if args.index:
             index_document(app, args.index)
-    elif args.command == "jabber":
+    elif args.command == "telegram":
         if args.send:
-            send(args.send, to=args.to)
+            send(args.send)
         if args.listen:
             listen(app=app, graph=graph)
     else:

@@ -22,13 +22,20 @@
     uv run langfuse_experiment datasets --publish ci
     ```
 
+5. Activate the Telegram listener (in a seaprate terminal session)
+
+    ```
+    uv run langfuse_experiment telegram -l
+    ```
+
+
 5. Chat with the agent
 
     ```
     uv run langfuse_experiment chat
     ```
 
-![Screenshot](./docs/Screenshot.png)
+![Screenshot](./docs/Demo.gif)
 
 ## AWS Permission Policy
 
@@ -67,7 +74,7 @@
     - [x] Update offline eval dataset with HR manual
     - [x] Evaluate RAG with offline evals
 - [x] Schedule online evals.
-- [ ] Add Human in the Loop in case agent can not find the answer from the documents.
+- [x] Add Human in the Loop in case agent can not find the answer from the documents.
 - [ ] Build a dashboard that shows agent performance against KPIs:
     1. Agent accuracy
     2. Token used
